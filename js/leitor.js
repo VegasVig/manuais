@@ -272,6 +272,7 @@
       '<select class="btn" id="trocar" aria-label="Trocar de central">' + CENTRAIS.map(function (c) {
         return '<option value="' + c.id + '"' + (c.id === m.id ? ' selected' : '') + '>' + esc(c.marca + ' · ' + c.nome) + '</option>';
       }).join('') + '</select></div>';
+    if ($('pdfOffline')) $('pdfOffline').addEventListener('click', function () { if (window.vegasBaixarPdfs) window.vegasBaixarPdfs(); });
     $('trocar').addEventListener('change', function () { location.href = 'leitor.html?central=' + encodeURIComponent(this.value); });
 
     var html = [], aberto = false;
@@ -418,6 +419,12 @@
     };
     mic.addEventListener('click', function () {
       if (ouvindo) { rec.stop(); return; }
+      if (!navigator.onLine) {
+        $('ouvindo').hidden = false;
+        $('ouvindoTxt').textContent = 'Sem internet: a busca por voz não funciona offline. Use a busca escrita.';
+        setTimeout(function () { $('ouvindo').hidden = true; }, 4000);
+        return;
+      }
       pararLeitura();
       try { rec.start(); } catch (e) {}
     });
