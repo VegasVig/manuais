@@ -183,3 +183,18 @@ h1 {
   .card, .theme-toggle, body { transition: none; }
   .card:hover { transform: none; }
 }
+
+.colas { width: 100%; max-width: 1100px; margin: 32px auto 8px; }
+.colas h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: .02em; }
+.colas__sub { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.colas__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.cola-card { display: flex; flex-direction: column; gap: 6px; padding: 18px; border-radius: 16px; text-decoration: none; color: var(--text);
+  background: var(--card); border: 1px solid var(--accent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+a.cola-card:hover { transform: translateY(-2px); }
+.cola-card strong { font-size: 20px; }
+.cola-card > span:not(.tag):not(.cola-card__links) { color: var(--muted); font-size: 14px; }
+.cola-card .tag { align-self: flex-start; }
+.cola-card__links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.cola-card__links a { padding: 8px 12px; min-height: 40px; display: inline-flex; align-items: center; border-radius: 10px; border: 1px solid var(--line);
+  color: var(--text); text-decoration: none; font-size: 14px; }
+.cola-card__links a:hover { border-color: var(--accent); }

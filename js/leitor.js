@@ -27,7 +27,9 @@
     return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
   function textoDe(html) {
-    return html.replace(/<\/(p|li|tr|th|td|figure)>/g, ' $&').replace(/<[^>]+>/g, ' ')
+    return html.replace(/<button[^>]*>[\s\S]*?<\/button>/g, ' ').replace(/<span class="seg"[^>]*>[\s\S]*?<\/span>/g, ' ')
+      .replace(/<tr><th>Endereço<\/th><th>Função<\/th><th>Valor Vegas<\/th><\/tr>/g, ' ')
+      .replace(/<\/(p|li|tr|th|td|figure)>/g, ' $&').replace(/<[^>]+>/g, ' ')
       .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
       .replace(/\s+/g, ' ').trim();
   }
@@ -79,7 +81,35 @@
   function bate(palavra, t) { return t.exato ? palavra === t.w : palavra.indexOf(t.stem) === 0; }
 
   /* ---------- carregamento ---------- */
+  function b64(v) { return btoa(unescape(encodeURIComponent(v))); }
+  function colaHtml(g) {
+    return '<div class="tbl"><table class="cola"><tr><th>Endereço</th><th>Função</th><th>Valor Vegas</th></tr>' +
+      g.itens.map(function (it) {
+        var v = it[2] || '', val = '';
+        if (v && it[3]) val = '<span class="seg" data-v="' + b64(v) + '">••••••</span> <button type="button" class="mini ver">mostrar</button> <button type="button" class="mini copiar" data-v="' + b64(v) + '">copiar</button>';
+        else if (v) val = esc(v) + (v.charAt(0) !== '—' && v.length > 3 ? ' <button type="button" class="mini copiar" data-v="' + b64(v) + '">copiar</button>' : '');
+        return '<tr><td><code>' + esc(it[0]) + '</code></td><td>' + esc(it[1]) + '</td><td>' + val + '</td></tr>';
+      }).join('') + '</table></div>';
+  }
+  function injetarCola(m) {
+    if (m._cola || !window.COLA) return m;
+    m._cola = true;
+    Object.keys(window.COLA).forEach(function (k) {
+      var c = window.COLA[k];
+      if (c.aplica.indexOf(m.id) < 0) return;
+      m.secoes.push({ id: 'cola', lvl: 1, t: c.titulo, pg: 0, cola: 1,
+        h: '<p class="nota"><b>Padrão Vegas.</b> ' + esc(c.intro) + ' Valores sensíveis ficam ocultos: toque em “mostrar”.</p>' });
+      c.grupos.forEach(function (g, i) {
+        m.secoes.push({ id: 'cola-' + (i + 1), lvl: 2, t: g.titulo, pg: 0, cola: 1, h: colaHtml(g) });
+      });
+    });
+    return m;
+  }
+
   function carregar(id) {
+    return carregarBruto(id).then(injetarCola);
+  }
+  function carregarBruto(id) {
     if (window.MANUAIS && window.MANUAIS[id]) return Promise.resolve(window.MANUAIS[id]);
     if (carregando[id]) return carregando[id];
     carregando[id] = new Promise(function (ok, falha) {
@@ -124,6 +154,7 @@
       if (e.tituloN.indexOf(frase) >= 0) total += 40;
       else if (e.corpoN.indexOf(frase) >= 0) total += 18;
     }
+    if (total && e.s.cola) total += 10;
     return { pontos: total, achados: achados };
   }
 
@@ -191,7 +222,7 @@
       var e = r.e, cam = (escopo.value === 'todas' ? e.m.nome + ' · ' : '') + e.caminho.join(' › ');
       return '<li><button class="res" type="button" data-i="' + i + '">' +
         (cam ? '<span class="res__cam">' + esc(cam) + '</span>' : '') +
-        '<span class="res__tit">' + marcarTexto(e.s.t, ts) + ' <span class="res__pg">pág. ' + e.s.pg + '</span></span>' +
+        '<span class="res__tit">' + marcarTexto(e.s.t, ts) + (e.s.cola ? ' <span class="res__cola">Cola Vegas</span>' : ' <span class="res__pg">pág. ' + e.s.pg + '</span>') + '</span>' +
         '<span class="res__trecho">' + marcarTexto(trecho(e, ts), ts) + '</span></button></li>';
     }).join('');
   }
@@ -268,22 +299,25 @@
     document.title = m.nome + ' — Manual · Vegas Vigilância e Segurança';
     cab.innerHTML = '<span class="tag tag--' + esc(m.marca) + '">' + esc(m.marca) + '</span>' +
       '<h1>' + esc(m.nome) + '</h1><p>Manual do usuário · ' + m.paginas + ' páginas no original · ' + m.secoes.length + ' seções pesquisáveis</p>' +
-      '<div class="acoes"><a class="btn" href="' + esc(m.pdf) + '" target="_blank" rel="noopener">' + ICON_PDF + ' PDF original</a>' +
+      '<div class="acoes">' + (m._cola && document.getElementById('cola') === null && m.secoes.some(function (x) { return x.cola; }) ? '<a class="btn btn--cola" href="#cola" data-id="cola">Cola Vegas</a>' : '') +
+      '<a class="btn" href="' + esc(m.pdf) + '" target="_blank" rel="noopener">' + ICON_PDF + ' PDF original</a>' +
       '<select class="btn" id="trocar" aria-label="Trocar de central">' + CENTRAIS.map(function (c) {
         return '<option value="' + c.id + '"' + (c.id === m.id ? ' selected' : '') + '>' + esc(c.marca + ' · ' + c.nome) + '</option>';
       }).join('') + '</select></div>';
     if ($('pdfOffline')) $('pdfOffline').addEventListener('click', function () { if (window.vegasBaixarPdfs) window.vegasBaixarPdfs(); });
+    var bc = cab.querySelector('.btn--cola');
+    if (bc) bc.addEventListener('click', function (ev) { ev.preventDefault(); limparMarcas(); abrirSecao('cola', null); });
     $('trocar').addEventListener('change', function () { location.href = 'leitor.html?central=' + encodeURIComponent(this.value); });
 
     var html = [], aberto = false;
     m.secoes.forEach(function (s) {
       var ferr = '<span class="sec__ferr">' +
         (window.speechSynthesis ? '<button type="button" class="ico-btn ouvir" data-id="' + s.id + '" title="Ouvir esta seção">' + ICON_OUVIR + '<span>Ouvir</span></button>' : '') +
-        '<a class="ico-btn" href="' + esc(m.pdf) + '#page=' + s.pg + '" target="_blank" rel="noopener" title="Abrir a página no PDF original">pág. ' + s.pg + '</a></span>';
+        (s.pg ? '<a class="ico-btn" href="' + esc(m.pdf) + '#page=' + s.pg + '" target="_blank" rel="noopener" title="Abrir a página no PDF original">pág. ' + s.pg + '</a>' : '') + '</span>';
       if (s.lvl <= 2) {
         if (aberto) html.push('</section>');
         var tag = s.lvl === 1 ? 'h2' : 'h3';
-        html.push('<section class="sec" id="' + s.id + '"><div class="sec__cab"><' + tag + '>' + esc(s.t) + '</' + tag + '>' + ferr + '</div>' + s.h);
+        html.push('<section class="sec' + (s.cola ? ' sec--cola' : '') + '" id="' + s.id + '"><div class="sec__cab"><' + tag + '>' + esc(s.t) + '</' + tag + '>' + ferr + '</div>' + s.h);
         aberto = true;
       } else {
         if (!aberto) { html.push('<section class="sec">'); aberto = true; }
@@ -437,7 +471,23 @@
     if (lendo) lendo.classList.remove('on');
     lendo = null;
   }
+  function deB64(v) { return decodeURIComponent(escape(atob(v))); }
   conteudo.addEventListener('click', function (ev) {
+    var ver = ev.target.closest('.ver');
+    if (ver) {
+      var seg = ver.previousElementSibling;
+      if (ver.textContent === 'mostrar') { seg.textContent = deB64(seg.getAttribute('data-v')); ver.textContent = 'ocultar'; }
+      else { seg.textContent = '••••••'; ver.textContent = 'mostrar'; }
+      return;
+    }
+    var cp = ev.target.closest('.copiar');
+    if (cp) {
+      var val = deB64(cp.getAttribute('data-v'));
+      var ok = function () { cp.textContent = 'copiado ✓'; setTimeout(function () { cp.textContent = 'copiar'; }, 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(val).then(ok, function () { prompt('Copie o valor:', val); });
+      else prompt('Copie o valor:', val);
+      return;
+    }
     var img = ev.target.closest('figure img');
     if (img) {
       var d = document.createElement('dialog'); d.className = 'zoom';

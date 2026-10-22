@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Central de Manuais Técnicos — Vegas Vigilância e Segurança</title>
 <meta name="description" content="Biblioteca de consulta técnica para instalação, programação e manutenção de centrais de alarme.">
+<meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="dark light">
 <link rel="preload" as="image" href="assets/vegon-poster.jpg">
 <!-- Aplica o tema salvo antes da pintura, evitando "flash" -->
@@ -72,6 +73,28 @@
 
   <section class="grid" id="grid" aria-label="Centrais disponíveis"></section>
   <p class="empty" id="vazio" hidden>Nenhuma central encontrada para essa busca.</p>
+
+  <section class="colas" id="colas" aria-labelledby="colasTit">
+    <h2 id="colasTit">Cola Vegas</h2>
+    <p class="colas__sub">Programação padrão Vegas, com os campos já preenchidos.</p>
+    <div class="colas__grid">
+      <a class="cola-card" href="leitor.html?central=active#cola">
+        <span class="tag tag--JFL">JFL</span>
+        <strong>Active</strong>
+        <span>Zonas, usuários, tempos, comunicação e PGM</span>
+      </a>
+      <div class="cola-card">
+        <span class="tag tag--Intelbras">Intelbras</span>
+        <strong>AMT</strong>
+        <span>Senhas, monitoramento IP, chip e funções</span>
+        <span class="cola-card__links">
+          <a href="leitor.html?central=amt-8000#cola">AMT 8000</a>
+          <a href="leitor.html?central=amt-4010-smart#cola">AMT 4010</a>
+          <a href="leitor.html?central=amt-2018#cola">AMT 2018</a>
+        </span>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer class="foot">Vegas Vigilância e Segurança · Uso interno</footer>
